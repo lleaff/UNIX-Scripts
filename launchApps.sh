@@ -13,10 +13,10 @@ printHelp()
 	--install [copy/link] [installdir]"
 }
 
-SCRIPTNAME=${SCRIPTNAME%.*}
-
 installThis()
 {
+	SCRIPTNAME=${SCRIPTNAME%.*}
+
 	if [[ ! -f $FILE ]]; then
 		echo -e "# Add the commands you want $SCRIPTNAME to run,\n# one by line" > $FILE
 		editor $FILE
