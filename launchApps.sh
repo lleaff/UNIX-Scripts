@@ -12,14 +12,29 @@ installThis()
 		echo -e "# Add the commands you want $SCRIPTNAME to run,\n# one by line" > $FILE
 		editor $FILE
 	fi
-	mkdir -p $HOME/bin; ln -v $SCRIPT $HOME/bin/$SCRIPTNAME;
+
+	if [[ $1 == "copy" ]]; then
+		CMD=cp
+		shift 1
+	elif [[ $1 == "link" ]]; then
+		CMD=ln
+		shift 1
+	fi
+
+	if [[ -n $1 ]]; then
+		INSTALLDIR=$1
+	else
+		INSTALLDIR=$HOME/bin
+	fi
+
+	mkdir -p $INSTALLDIR; $CMD -v $SCRIPT $HOME/bin/$SCRIPTNAME;
 	exit 0
 }
 
 # Check the arguments, use default file if none is given
 if [[ -n $1 ]]; then
 	if [[ $1 == "--install" ]]; then
-		installThis
+		installThis $2 $3
 	elif [[ -f $1 ]]; then
 		FILE=$1;
 	else 
