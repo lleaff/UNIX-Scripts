@@ -82,6 +82,6 @@ launch()
 # Read the file and execute the launch function on each line
 while read line; do
 	if [[ ${line:0:1} != '#' ]]; then
-		launch $line
+		launch "$line"
 	fi
 done < $FILE
