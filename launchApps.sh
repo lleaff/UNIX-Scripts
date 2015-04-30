@@ -46,7 +46,8 @@ launch()
 		echo "Launching "$PROCESS"..."
 		# Redirect output to /dev/null and execute in background
 		$COMMAND &>/dev/null & 
-		# Detach process from terminal ($! == PID of last run command)
+		# Detach process from terminal 
+		#  ($! == PID of last program started in background)
 		disown $!
 	fi
 }
