@@ -3,7 +3,16 @@
 FILE="$HOME/.config/applicationsToRun.txt"
 
 SCRIPTPATH=$0
-SCRIPTNAME=$(basename $SCRIPT)
+SCRIPTNAME=$(basename $SCRIPTPATH)
+
+printHelp()
+{
+	echo "Usage: $SCRIPTNAME [sourceFile]
+	sourceFile: optional argument containing the commands to run, if no file is specified, $FILE is sourced
+
+	--install [copy/link] [installdir]"
+}
+
 SCRIPTNAME=${SCRIPTNAME%.*}
 
 installThis()
@@ -28,13 +37,16 @@ installThis()
 	fi
 
 	mkdir -p $INSTALLDIR; $CMD -v $SCRIPT $HOME/bin/$SCRIPTNAME;
-	exit 0
 }
 
 # Check the arguments, use default file if none is given
 if [[ -n $1 ]]; then
-	if [[ $1 == "--install" ]]; then
+	if [[ $1 == "--help" || $1 == "-h" ]]; then
+		printHelp
+		echo 0
+	elif [[ $1 == "--install" ]]; then
 		installThis $2 $3
+		echo 0
 	elif [[ -f $1 ]]; then
 		FILE=$1;
 	else 
