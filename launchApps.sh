@@ -2,15 +2,17 @@
 
 FILE="$HOME/.config/applicationsToRun.txt"
 
-SCRIPT=$0
+SCRIPTPATH=$0
+SCRIPTNAME=$(basename $SCRIPT)
+SCRIPTNAME=${SCRIPTNAME%.*}
 
 installThis()
 {
 	if [[ ! -f $FILE ]]; then
-		echo -e "# Add the commands you want launchApps.sh to run,\n# one by line" > $FILE
+		echo -e "# Add the commands you want $SCRIPTNAME to run,\n# one by line" > $FILE
 		editor $FILE
 	fi
-	mkdir -p $HOME/bin; ln -v $SCRIPT $HOME/bin/$(basename $SCRIPT);
+	mkdir -p $HOME/bin; ln -v $SCRIPT $HOME/bin/$SCRIPTNAME;
 	exit 0
 }
 
