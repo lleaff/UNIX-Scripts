@@ -3,7 +3,14 @@
 FILE="$HOME/.config/applicationsToRun.txt"
 # Check the arguments, use default file if none is given
 if [[ -n $1 ]]; then
-	if [[ -f $1 ]]; then
+	if [[ $1 == "--install" ]]; then
+		if [[ ! -f $FILE ]]; then
+			echo -e "# Add the commands you want launchApps.sh to run,\n# one by line" > $FILE
+			editor $FILE
+		fi
+		mkdir -p $HOME/bin; ln -v $0 $HOME/bin/$(basename $0);
+		exit 0
+	elif [[ -f $1 ]]; then
 		FILE=$1;
 	else 
 		echo "$1 file not found, leave out argument to use $FILE instead"
