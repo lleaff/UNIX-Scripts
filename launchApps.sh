@@ -69,7 +69,7 @@ launch()
 		COMMAND=$1; PROCESS=$(echo $COMMAND | awk '{print $1}');
 	fi
 
-	if [[ -z $(pgrep $PROCESS) ]]; then
+	if [[ -z $(pgrep -f $PROCESS) ]]; then
 		echo "Launching "$PROCESS"..."
 		# Redirect output to /dev/null and execute in background
 		$COMMAND &>/dev/null & 
