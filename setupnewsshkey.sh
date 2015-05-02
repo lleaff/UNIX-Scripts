@@ -14,13 +14,15 @@ fi
 
 echo "Input your email: "
 read EMAIL
-echo "Just press [Enter] when asked to enter a file to save the key"
+echo -e "Just press [Enter] when asked to enter a file to save the key
+_____________________________________________________________"
 ssh-keygen -t rsa -C "$EMAIL"
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_rsa
-echo "\nAdd this to your GitHub account (Settings > SSH keys):\n"
+echo -e "\nAdd this to your GitHub account 
+\t(https://github.com/settings/ssh):\n"
 cat ~/.ssh/id_rsa.pub
-echo "\nIf you've added the key to your account, do you want to test the connection?"
+echo -e "\nIf you've added the key to your account, do you want to test the connection?"
 confirm () {
     # call with a prompt string or use a default
     read -r -p "${1:-[y/N]} " response
