@@ -26,8 +26,8 @@ if [[ $2 ]]; then backupDestination=$2; fi
 __createDirIfNotExist() {
 	CONTDIR=${1##*/}
 	if [[ ! -d $1 ]]; then
-		if [[ ! $OSX ]]; then local STATFORMAT='--format=%U';
-		else local STATFORMAT='-f %Su'; fi
+		if [[ $(stat --version | grep BSD) ]]; then local STATFORMAT='-f %Su';
+		else local STATFORMAT='--format=%U'; fi
 		if [[ $(stat $STATFORMAT $CONTDIR) == "root" && "$UID" != 0 ]]; then
 			if [[ ! $(hash sudo) ]]; then
 				NEEDSUDO=sudo
