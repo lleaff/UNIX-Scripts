@@ -4,6 +4,11 @@
 backupDestination="/backups"
 FILEMANAGER=thunar
 
+#################
+
+# Detect Mac OS
+if [[ $(uname -s) == "Darwin" ]]; then OSX=true; else unset OSX; fi
+
 #### Arguments ###
 if [[ $1 ]]; then 
 	dirToBackup=$1
