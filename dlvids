@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# dlvids
+# Download all urls in a file with youtube-dl
+
+# =Configuration
+############################################################
+
+DLPROG=youtube-dl
+DLCMD=${DLPROG}
+
+############################################################
+
 ### Colors
 txtred='\e[0;31m' # Red
 txtgrn='\e[0;32m' # Green
@@ -7,7 +18,6 @@ txtylw='\e[0;33m' # Yellow
 txtblu='\e[0;34m' # Blue
 txtpur='\e[0;35m' # Purple
 txtcyn='\e[0;36m' # Cyan
-txtwht='\e[0;37m' # White
 txtrst='\e[0m'    # Text Reset
 ###
 
@@ -21,9 +31,12 @@ fi
 if [[ -n $1 ]]; then
     inputFile="$1"
 else
-	echo -e "${txtred}Usage: $(basename $0) FILE${txtrst}\n
-FILE: a file with one URL per line,\nlines starting with '#'\
- are ignored"
+	echo -e "${txtred}Usage: $(basename $0) [OPTIONS] FILE${txtrst}\n
+FILE:  A file with one URL per line, lines starting\n      with '#'\
+ are ignored.\n
+Options:
+    -m      Comment out successfully downloaded URLs (prepend
+          them with a # character)."
     exit 1
 fi
 
@@ -32,13 +45,18 @@ if [[ ! -e $inputFile ]]; then
     exit 1
 fi
 
+if [[ -n $(hash $DLCMD 2>&1) ]]; then
+	echo -e "${txtred}Required program \"$DLPROG\" is not installed.${txtrst}"
+	exit 1
+fi
+
 processed=0
 skipped=0
 errors=0
 
 while read -r url || [[ -n "$url" ]]; do
     if [[ ${url:0:1} != "#" ]]; then
-        youtube-dl "$url";
+        $DLCMD "$url";
         status=$?
         if test $status; then
            processed=$(( $processed + 1 ))
