@@ -16,7 +16,16 @@ PRINTHELP=false
 
 # =Constants
 ############################################################
-USAGE="${txtred}Usage: $(basename $0) [OPTIONS] FILE${txtrst}\n
+### Colors
+txtred='\e[0;31m' # Red
+txtgrn='\e[0;32m' # Green
+txtylw='\e[0;33m' # Yellow
+txtblu='\e[0;34m' # Blue
+txtpur='\e[0;35m' # Purple
+txtcyn='\e[0;36m' # Cyan
+txtrst='\e[0m'    # Text Reset
+
+USAGE="Usage: $(basename $0) [OPTIONS] FILE${txtrst}\n
 FILE:              A file with one URL per line, lines starting with '#' are
                  ignored.\n"
 HELP="Options:
@@ -28,15 +37,6 @@ HELP="Options:
 \"youtube-dl\".
     -h             Print this help."
 
-### Colors
-txtred='\e[0;31m' # Red
-txtgrn='\e[0;32m' # Green
-txtylw='\e[0;33m' # Yellow
-txtblu='\e[0;34m' # Blue
-txtpur='\e[0;35m' # Purple
-txtcyn='\e[0;36m' # Cyan
-txtrst='\e[0m'    # Text Reset
-
 # =Argument parsing
 ############################################################
 while getopts ":mqo:C:h" opt; do
@@ -46,7 +46,7 @@ while getopts ":mqo:C:h" opt; do
         "o") DIR=$OPTARG ;;
         "C") DLCMD=$OPTARG ;;
         "h") PRINTHELP=true ;;
-        *) echo -e "$USAGE$HELP"; exit 1 ;;
+        *) echo -e "${txtred}${USAGE}${txtrst}${HELP}"; exit 1 ;;
     esac
 done
 shift $(($OPTIND - 1))
@@ -54,14 +54,14 @@ shift $(($OPTIND - 1))
 # =Arguments checking and setup
 ############################################################
 if $PRINTHELP; then
-    echo -e "$USAGE$HELP"
+    echo -e "${USAGE}${HELP}"
     exit 0
 fi
 
 if [[ -n $1 ]]; then
     inputFile="$1"
 else
-    echo -e "$USAGE$HELP"
+    echo -e "${txtred}${USAGE}${txtrst}${HELP}"
     exit 1
 fi
 
