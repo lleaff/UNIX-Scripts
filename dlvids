@@ -9,7 +9,24 @@
 DLPROG=youtube-dl
 DLCMD=${DLPROG}
 
+DIR="."
+QUIET=false
+MODIFY=false
+PRINTHELP=false
+
+# =Constants
 ############################################################
+USAGE="${txtred}Usage: $(basename $0) [OPTIONS] FILE${txtrst}\n
+FILE:              A file with one URL per line, lines starting with '#' are
+                 ignored.\n"
+HELP="Options:
+    -m             Comment out successfully downloaded URLs (prepend them
+                 with a '#' character).
+    -q             Silence output from the download command.
+    -o PATH        Download in specified directory instead of current directory.
+    -C COMMAND     Command to be executed on each line. Defaults to \
+\"youtube-dl\".
+    -h             Print this help."
 
 ### Colors
 txtred='\e[0;31m' # Red
@@ -19,50 +36,69 @@ txtblu='\e[0;34m' # Blue
 txtpur='\e[0;35m' # Purple
 txtcyn='\e[0;36m' # Cyan
 txtrst='\e[0m'    # Text Reset
-###
 
-if [[ $1 == "-m" ]]; then
-    modify=true
-    shift
-else
-    modify=false
+# =Argument parsing
+############################################################
+while getopts ":mqo:C:h" opt; do
+    case $opt in
+        "m") MODIFY=true ;;
+        "q") QUIET=true ;;
+        "o") DIR=$OPTARG ;;
+        "C") DLCMD=$OPTARG ;;
+        "h") PRINTHELP=true ;;
+        *) echo -e "$USAGE$HELP"; exit 1 ;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+# =Arguments checking and setup
+############################################################
+if $PRINTHELP; then
+    echo -e "$USAGE$HELP"
+    exit 0
 fi
 
 if [[ -n $1 ]]; then
     inputFile="$1"
 else
-	echo -e "${txtred}Usage: $(basename $0) [OPTIONS] FILE${txtrst}\n
-FILE:  A file with one URL per line, lines starting\n      with '#'\
- are ignored.\n
-Options:
-    -m      Comment out successfully downloaded URLs (prepend
-          them with a # character)."
+    echo -e "$USAGE$HELP"
     exit 1
 fi
 
-if [[ ! -e $inputFile ]]; then
-    echo -e "${txtred}Input file not found: $inputFile${txtrst}"
+if [[ ! -d $DIR ]]; then
+    echo -e "${txtred}Not a directory: $DIR"
+    exit 1
+fi
+
+if [[ ! -f $inputFile ]]; then
+    echo -e "${txtred}Not a file: $inputFile${txtrst}"
     exit 1
 fi
 
 if [[ -n $(hash $DLCMD 2>&1) ]]; then
-	echo -e "${txtred}Required program \"$DLPROG\" is not installed.${txtrst}"
-	exit 1
+    echo -e "${txtred}Required program \"$DLPROG\" is not installed.${txtrst}"
+    exit 1
 fi
+
+if $QUIET; then SILENCE='2>&1 >/dev/null'; fi
 
 processed=0
 skipped=0
 errors=0
 
+# =Execution
+############################################################
+cd $DIR
+
 while read -r url || [[ -n "$url" ]]; do
     if [[ ${url:0:1} != "#" ]]; then
-        $DLCMD "$url";
+        eval "$DLCMD $url $QUIET";
         status=$?
         if test $status; then
-           processed=$(( $processed + 1 ))
-           if $modify; then
-               sed -i 's|^\('$url'\)$|#\1|' $inputFile
-           fi
+            processed=$(( $processed + 1 ))
+            if $MODIFY; then
+                sed -i 's|^\('$url'\)$|#\1|' $inputFile
+            fi
         else
             errors=$(( $errors + 1 ))
         fi
@@ -73,16 +109,16 @@ done < $inputFile
 
 processedMsg="$processed URL processed"
 if [[ $processed != 0 ]]; then
-	processedMsg=${txtgrn}${processedMsg}${txtrst};
+    processedMsg=${txtgrn}${processedMsg}${txtrst};
 fi
 if [[ $skipped != 0 ]]; then
-	skippedMsg=", $skipped skipped";
+    skippedMsg=", $skipped skipped";
 fi
 if [[ $errors != 0 ]]; then
-	errorsMsg=", ${txtred}$errors errors${txtrst}";
-	returnVal=1;
+    errorsMsg=", ${txtred}$errors errors${txtrst}";
+    returnVal=1;
 else
-	returnVal=0;
+    returnVal=0;
 fi
 
 echo -e "$processedMsg$skippedMsg$errorsMsg."
