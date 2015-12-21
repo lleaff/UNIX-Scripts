@@ -1,0 +1,16 @@
+#!/bin/bash
+
+FOLDER="YOUR_TEMPLATE_FOLDER"
+
+WD=$(pwd)
+
+cd $FOLDER
+find . -maxdepth 1 ! -name . -type d -exec basename {} \; | awk '$0="["NR"] "$0'
+
+ln=$(find . -maxdepth 1 ! -name . -type d -exec echo {} \; | wc -l)
+
+echo -n "copy? [1-$ln] "
+read i
+if [[ -z $i ]]; then exit 1; fi
+
+cp -r $(find . -maxdepth 1 ! -name . -type d -exec echo {} \; | awk 'NR=='$i) $WD
