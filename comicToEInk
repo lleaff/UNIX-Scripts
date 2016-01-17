@@ -1,0 +1,198 @@
+#!/bin/bash
+
+# =User variables
+#____________________________________________________________
+W=1080
+H=1440
+
+# Auto-crop?
+TRIM=true
+TRIMFUZZ='30%'
+
+# Images with upper-case formats will be processed too
+IMGFORMATS="png bmp gif jpeg jpg"
+
+# =Meta
+#____________________________________________________________
+DEPENDENCIES="awk convert unrar unzip zip parallel optipng"
+for d in $DEPENDENCIES; do
+  missingc=0
+  if [[ -z $(command -v $d) ]]; then
+    echo "Missing dependency: $d"
+  missingc=$(expr $missingc + 1)
+  fi
+  if [[ $missingc != 0 ]]; then
+    exit 1
+  fi
+done
+
+# =Color codes
+nocolor='\e[m'
+fggreen='\e[0;32m'
+bggreen='\e[102m'
+fgpurple='\e[0;35m'
+bgblue='\e[44m'
+fgwhite='\e[97m'
+bgblack='\e[40m'
+
+silent() {
+  >/dev/null 2>&1 $@
+}
+
+
+# print a full-terminal-width line with a given string
+hr() {
+  if [[ -n $2 ]]; then
+    local color=$2
+  fi
+  if [[ -z ${COLS+x} ]]; then
+    COLS="$(tput cols)"
+    if (( COLS <= 0 )) ; then COLS="${COLUMNS:-80}"; fi
+  fi
+  local WORD="$1"
+  if [[ -z "$WORD" ]]; then WORD="_"; fi
+  local LINE=''
+  while (( ${#LINE} < COLS )); do
+    LINE="$LINE$WORD"
+  done
+  echo -e "$color${LINE:0:$COLS}${nocolor}"
+}
+
+extension() {
+  echo "${1##*.}" | awk '{print tolower($0)}'
+}
+
+#____________________________________________________________
+
+
+WORKDIR="$(mktemp -d)"
+CONVDIR="Converted"
+if [[ $TRIM == true ]]; then
+  TRIMCMD="-fuzz "$TRIMFUZZ" -trim"
+  TRIMREPAGE="+repage"
+else
+  TRIMCMD=""
+  TRIMREPAGE=""
+fi
+
+process()
+{
+  if [ $(identify -format '%w' "$1") -gt $(identify -format '%h' "$1") ]
+  then
+    ROTATE="-rotate -90"
+    ROTATEREPAGE="+repage"
+  else
+    ROTATE=""
+    ROTATEREPAGE=""
+  fi
+
+  GAMMA="" # eg.: No gamma correction: ",1"
+
+  #LEVEL="-level 30%,100%$GAMMA"
+
+  # Sigmoidal contrast version
+  # convert -limit thread 1 +sigmoidal-contrast 5.0,50% $ROTATE -filter LanczosSharp -distort Resize '1080x1440' -sigmoidal-contrast 5.0,50% -grayscale rec601luma "$1" "$2"
+  convert -limit thread 3 +sigmoidal-contrast 5.0,50% $ROTATE $ROTATEREPAGE $TRIMCMD $TRIMREPAGE -filter LanczosSharp -distort Resize "$Wx$H" -sigmoidal-contrast 5.0,50% -grayscale rec601luma $LEVEL "$1" "$2"
+}
+
+prepareFiles()
+{
+  if [[ -d "$1" ]]; then
+    cp -r "$1/"* "$WORKDIR"
+  else
+    local ext="$(extension "$1")"
+    if [[ $ext == "zip" ]] || [[ $ext == "cbz" ]]; then
+        unzip -q "$1" -d "$WORKDIR"
+    elif [[ $ext == "rar" ]] || [[ $ext == "cbr" ]]; then
+        unrar x "$1" "$WORKDIR" >/dev/null
+    fi
+  fi
+
+  # Flatten directory tree
+  find $WORKDIR -mindepth 2 -type f -exec mv -t $WORKDIR '{}' +
+  find $WORKDIR -mindepth 2 -type d -exec rm -r '{}' +
+}
+
+archive()
+{
+  # Rename archive to .zip format
+  local ext=$(extension $1)
+
+  #case $ext in
+  #  "rar")
+  #    archiveName="${1%.$ext}.cbz" ;;
+  #  "cbr")
+  #    archiveName="${1%.$ext}.cbz" ;;
+  #  *)
+  #    archiveName=$1 ;;
+  #esac
+  archiveName="${1%.$ext}.cbz"
+
+  zip -q -j "$CONVDIR/$archiveName" "$WORKDIR"/*
+  rm -r "$WORKDIR"/*
+}
+
+# =Execution
+#____________________________________________________________
+mkdir -p "$CONVDIR"
+export SHELL="/usr/bin/bash"
+export -f process
+
+# case-insensitive glob
+#shopt -s nocaseglob; $*; shopt -u nocaseglob
+
+for i in "$@"; do
+  prepareFiles "$i"
+
+  filecount=$(\ls -afq $WORKDIR | wc -l)
+  currfile=0
+
+  for e in $IMGFORMATS; do
+    if [[ -n $(find $WORKDIR -iname "*.$e") ]]; then
+
+      hr '#' ${bgblue}
+      echo "Processing $e files"
+      hr '#' ${bgblue}
+
+      for f in $WORKDIR/*.$e \
+          $WORKDIR/*.$(echo $e | awk '{print toupper($0)}'); do
+        printf "${fgpurple}Processing:${nocolor} $(basename "$f") ..."
+        process "$f" "$f"
+        #parallel --no-notice --eta process {} {.}.$e ::: "$WORKDIR"/*
+        if [[ $e == "png" ]] || [[ $e == "PNG" ]]; then
+          optipng -quiet -o2 "$f"
+          printf "${fgpurple}optipng${nocolor}"
+          #parallel --no-notice --eta optipng -quiet -o2 ::: "$WORKDIR"/*.$e
+        else
+          printf ".........."
+        fi
+
+        currfile=$(expr $currfile + 1)
+        printf "${fggreen}✓${nocolor}  ${bgblack}${fgwhite}${currfile}/${filecount}${nocolor}\n"
+      done
+    fi
+  done
+
+  archive "$i"
+done
+
+rmdir "$WORKDIR"
+
+
+# Post completion
+#____________________________________________________________
+
+echo -e "${bggreen} Done ${nocolor}"
+hr ' ' ${bggreen}
+if [[ -n $(command -v notify-send) ]]; then
+  silent notify-send "$@ processing complete"
+fi
+if [[ -n $(command -v xdg-open) ]]; then
+  if [[ -n $(command -v xdotool) ]]; then
+    if [[ -z $(xdotool search --name $CONVDIR) ]]; then
+      silent xdg-open "$CONVDIR"
+    fi
+  else
+    silent xdg-open "$CONVDIR"
+  fi
+fi
