@@ -1,0 +1,25 @@
+#!/bin/bash
+
+command="$1"
+increment="$2"
+if [ -z $increment ]; then increment=1; fi
+
+if [ -z $command ]; then
+  echo "USAGE: $(basename $0) <inc|dec> [INCREMENT=1]" 1>&2
+  exit 1
+fi
+
+if ! hash xbacklight 2>/dev/null; then
+  echo "xbacklight not installed (apt install xbacklight)." 1>&2
+  exit 1
+fi
+
+if [ "$command" = "inc" ]; then
+  xbacklight -inc "$increment"
+else
+  if [ "$(echo "$(xbacklight -get) > ${increment}" | bc -l)" = 1 ]; then
+    xbacklight -dec ${increment}
+  else
+    xbacklight -set 1
+  fi
+fi
